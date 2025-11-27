@@ -3,83 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 智能药箱 (旗舰版)</title>
+    <title>AI 智能药箱 (百科版)</title>
     <script src="//cdn.jsdelivr.net/npm/leancloud-storage@4.15.0/dist/av-min.js"></script>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
     <style>
-        :root { --primary: #10a37f; --primary-dark: #0d8a6c; --danger: #d73a49; --warning: #f59e0b; --blue: #3b82f6; --bg: #f3f4f6; --card: #fff; }
+        :root { --primary: #10a37f; --primary-dark: #0d8a6c; --blue: #3b82f6; --danger: #d73a49; --warning: #f59e0b; --bg: #f3f4f6; --card: #fff; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); padding: 15px; color: #1f2937; margin: 0; padding-bottom: 80px; }
         .container { max-width: 800px; margin: 0 auto; display: none; }
         h2 { text-align: center; color: #374151; margin-bottom: 15px; font-weight: 700; }
-        
+
         /* 登录框 */
         #login-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 10000; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
         .pass-input { padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 18px; text-align: center; margin-bottom: 15px; outline: none; }
-        .pass-input:focus { border-color: var(--primary); }
         .login-btn { padding: 12px 30px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 16px; }
 
-        /* 顶部筛选栏 */
+        /* 顶部筛选 */
         .filter-section { position: sticky; top: 0; background: var(--bg); z-index: 90; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }
         .search-box { position: relative; margin-bottom: 10px; }
-        .search-box input { width: 100%; padding: 12px 15px 12px 40px; border: 1px solid #e5e7eb; border-radius: 25px; font-size: 16px; box-sizing: border-box; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .search-box input { width: 100%; padding: 12px 15px 12px 40px; border: 1px solid #e5e7eb; border-radius: 25px; font-size: 16px; box-sizing: border-box; }
         .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #9ca3af; }
-        
-        .category-scroll { display: flex; overflow-x: auto; gap: 8px; padding-bottom: 8px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+        .category-scroll { display: flex; overflow-x: auto; gap: 8px; padding-bottom: 8px; scrollbar-width: none; }
         .category-scroll::-webkit-scrollbar { display: none; }
         .cat-btn { white-space: nowrap; padding: 6px 16px; border-radius: 20px; border: 1px solid #e5e7eb; background: white; color: #4b5563; font-size: 14px; transition: all 0.2s; }
-        .cat-btn.active { background: var(--primary); color: white; border-color: var(--primary); font-weight: 600; box-shadow: 0 2px 5px rgba(16, 163, 127, 0.3); }
+        .cat-btn.active { background: var(--primary); color: white; border-color: var(--primary); font-weight: 600; }
         .cat-btn.special { border-color: #fcd34d; color: #b45309; }
-        .cat-btn.special.active { background: var(--warning); color: white; border-color: var(--warning); }
+        .cat-btn.special.active { background: var(--warning); color: white; }
 
-        /* 输入/编辑卡片 */
-        .toggle-btn { width: 100%; padding: 12px; background: white; border: 1px dashed #9ca3af; color: #6b7280; border-radius: 12px; margin-bottom: 15px; font-weight: 600; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 5px; }
-        .input-card { background: var(--card); padding: 20px; border-radius: 16px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05); margin-bottom: 20px; display: none; border: 1px solid #e5e7eb; }
+        /* 主操作按钮组 */
+        .main-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .action-card { background: white; padding: 15px; border-radius: 12px; text-align: center; font-weight: 600; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border: 1px solid #e5e7eb; color: #4b5563; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .action-card:active { transform: scale(0.98); background: #f9fafb; }
+        .add-btn { color: var(--primary-dark); border-color: #a7f3d0; background: #ecfdf5; }
+        .wiki-btn { color: #1e40af; border-color: #bfdbfe; background: #eff6ff; }
+
+        /* 药品表单 */
+        .input-card { background: var(--card); padding: 20px; border-radius: 16px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); margin-bottom: 20px; display: none; position: relative; }
         .input-card.show { display: block; animation: slideDown 0.3s; }
-        
         .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
         .full-width { grid-column: 1 / -1; }
         label { display: block; margin-bottom: 5px; font-size: 0.85em; font-weight: 600; color: #4b5563; }
-        input, select { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; box-sizing: border-box; font-size: 15px; transition: border 0.2s; }
-        input:focus { border-color: var(--primary); outline: none; ring: 2px var(--primary); }
-
-        /* 标签选择区 (新功能) */
+        input, select { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; box-sizing: border-box; font-size: 15px; }
+        
+        /* 标签 */
         .tags-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px; }
-        .check-tag { padding: 6px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; cursor: pointer; background: #f9fafb; user-select: none; transition: 0.2s; }
+        .check-tag { padding: 6px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; cursor: pointer; background: #f9fafb; }
         .check-tag.checked { background: #ecfdf5; border-color: var(--primary); color: var(--primary-dark); font-weight: bold; }
 
-        /* 按钮组 */
-        .action-bar { display: flex; gap: 10px; margin-top: 20px; }
-        .btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; color: white; display: flex; justify-content: center; align-items: center; gap: 5px; }
-        .btn-primary { background: var(--primary); }
-        .btn-cancel { background: #9ca3af; }
-        .btn-scan { background: #1f2937; width: auto; flex: 0 0 50px; }
-        .btn-ai { background: linear-gradient(135deg, #3b82f6, #2563eb); width: auto; flex: 0 0 80px; font-size: 13px; }
+        /* 按钮样式 */
+        .btn { padding: 12px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; color: white; display: flex; justify-content: center; align-items: center; gap: 5px; }
+        .btn-primary { background: var(--primary); width: 100%; }
+        .btn-cancel { background: #9ca3af; width: 100%; }
+        .btn-scan { background: #1f2937; color: white; padding: 8px 12px; border-radius: 6px; border:none; cursor: pointer; }
+        .btn-ai { background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; padding: 8px 12px; border-radius: 6px; border:none; cursor: pointer; font-size: 13px; }
 
-        /* 药品卡片 */
-        .drug-card { background: var(--card); padding: 16px; margin-bottom: 12px; border-radius: 12px; border-left: 6px solid var(--primary); position: relative; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: transform 0.2s; }
-        .drug-card:active { transform: scale(0.98); }
+        /* 药品列表卡片 */
+        .drug-card { background: var(--card); padding: 16px; margin-bottom: 12px; border-radius: 12px; border-left: 6px solid var(--primary); position: relative; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         .drug-card.expired { border-left-color: var(--danger); background: #fef2f2; }
         .drug-card.warning { border-left-color: var(--warning); background: #fffbeb; }
-
-        .card-header { padding-right: 60px; } /* 留出按钮空间 */
-        .drug-name { font-size: 1.15em; font-weight: 700; margin: 0 0 5px 0; color: #111827; }
-        .info-row { display: flex; gap: 10px; font-size: 0.85em; color: #6b7280; margin-bottom: 8px; align-items: center; }
-        .tag-row { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
-        .mini-tag { font-size: 11px; padding: 2px 6px; border-radius: 4px; background: #e5e7eb; color: #374151; }
-        
-        /* 卡片操作按钮 */
         .card-actions { position: absolute; top: 12px; right: 12px; display: flex; gap: 8px; }
         .icon-btn { background: none; border: none; font-size: 18px; cursor: pointer; padding: 5px; color: #9ca3af; }
-        .icon-btn.edit:hover { color: var(--blue); }
-        .icon-btn.del:hover { color: var(--danger); }
+        .drug-name { font-size: 1.15em; font-weight: 700; margin: 0 0 5px 0; color: #111827; }
+        .info-row { display: flex; gap: 10px; font-size: 0.85em; color: #6b7280; margin-bottom: 8px; align-items: center; }
+        .mini-tag { font-size: 11px; padding: 2px 6px; border-radius: 4px; background: #e5e7eb; color: #374151; margin-right: 5px; }
 
-        /* 杂项 */
-        #scanner-modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:2000; flex-direction:column; justify-content:center; }
-        #loading-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); z-index:1999; justify-content:center; align-items:center; flex-direction:column; }
+        /* === 📖 百科弹窗样式 === */
+        #wiki-modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:3000; justify-content:center; align-items:flex-end; }
+        .wiki-content { background: white; width: 100%; height: 85vh; border-radius: 20px 20px 0 0; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; animation: slideUp 0.3s; }
+        .wiki-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .wiki-body { flex: 1; overflow-y: auto; line-height: 1.6; color: #374151; padding: 10px; background: #f9fafb; border-radius: 8px; border: 1px solid #eee; white-space: pre-wrap; font-size: 15px; }
+        .wiki-input-group { display: flex; gap: 10px; margin-bottom: 10px; }
+        .wiki-title { font-size: 1.2em; font-weight: bold; color: #3b82f6; }
+
+        /* 通用遮罩 */
+        #scanner-modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:4000; flex-direction:column; justify-content:center; }
+        #loading-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); z-index:5000; justify-content:center; align-items:center; flex-direction:column; }
         .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s infinite linear; }
+        
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
     </style>
 </head>
 <body>
@@ -88,8 +91,27 @@
 <div id="login-modal">
     <div style="font-size:40px;margin-bottom:10px">💊</div>
     <h3 style="margin-top:0">家庭药箱</h3>
-    <input type="password" id="passwordInput" class="pass-input" placeholder="请输入密码" onkeyup="if(event.key==='Enter') checkLogin()">
+    <input type="password" id="passwordInput" class="pass-input" placeholder="输入密码" onkeyup="if(event.key==='Enter') checkLogin()">
     <button class="login-btn" onclick="checkLogin()">进入</button>
+</div>
+
+<!-- 📖 药品百科弹窗 -->
+<div id="wiki-modal">
+    <div class="wiki-content">
+        <div class="wiki-header">
+            <span class="wiki-title">📖 药品百科查询</span>
+            <button onclick="document.getElementById('wiki-modal').style.display='none'" style="border:none;background:none;font-size:24px;color:#999">×</button>
+        </div>
+        <div class="wiki-input-group">
+            <input type="text" id="wikiInput" placeholder="输入想了解的药名（如：阿莫西林）" style="flex:1">
+            <button class="btn-ai" onclick="searchWiki()" style="width:auto;padding:0 20px">查询</button>
+        </div>
+        <div id="wikiResult" class="wiki-body">
+            <div style="color:#999;text-align:center;margin-top:50px">
+                输入药品名称，AI 将为您生成<br>详细的功能、用法、禁忌说明书。<br><br>💡 即使药箱里没有的药也能查！
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- 扫码 -->
@@ -107,79 +129,78 @@
 <div class="container" id="mainApp">
     <h2>🏥 智能家庭药箱</h2>
 
-    <!-- 1. 筛选区 -->
+    <!-- 1. 顶部筛选 -->
     <div class="filter-section">
         <div class="search-box">
             <span class="search-icon">🔍</span>
-            <input type="text" id="searchInput" placeholder="搜索药名、功能..." oninput="handleSearch()">
+            <input type="text" id="searchInput" placeholder="搜索我的库存..." oninput="handleSearch()">
         </div>
         <div class="category-scroll" id="filterBar">
-            <!-- 动态生成的筛选按钮会放在这里 -->
             <button class="cat-btn active" onclick="filterBy('all', this)">全部</button>
             <button class="cat-btn special" onclick="filterBy('expired', this)">⚠️ 已过期</button>
             <button class="cat-btn special" onclick="filterBy('expiring', this)">⏳ 快过期</button>
+            <!-- 标签将通过JS生成 -->
         </div>
     </div>
 
-    <!-- 2. 操作/输入区 -->
-    <div class="toggle-btn" onclick="openForm()">➕ 添加药品</div>
+    <!-- 2. 主功能按钮区 (改版) -->
+    <div class="main-actions">
+        <div class="action-card add-btn" onclick="openForm()">
+            <span>➕ 添加/扫码药品</span>
+        </div>
+        <div class="action-card wiki-btn" onclick="openWiki()">
+            <span>📖 查药品百科</span>
+        </div>
+    </div>
     
+    <!-- 3. 添加/编辑表单 -->
     <div class="input-card" id="inputCard">
-        <h3 style="margin-top:0;margin-bottom:15px;color:#374151" id="formTitle">添加新药品</h3>
-        
+        <h3 style="margin-top:0;margin-bottom:15px;color:#374151" id="formTitle">添加药品</h3>
         <div class="form-grid">
             <div class="full-width" style="display:flex;gap:8px">
                 <div style="flex:1">
-                    <label>药品名称 / 条形码</label>
-                    <input type="text" id="name" placeholder="输入名称 或 扫码">
+                    <label>名称 / 条码</label>
+                    <input type="text" id="name" placeholder="名称 或 扫码">
                 </div>
                 <div style="display:flex;align-items:flex-end;gap:5px">
-                    <button class="btn btn-scan" onclick="startScanner()">📷</button>
-                    <button class="btn btn-ai" onclick="identifyDrug()">✨ 识别</button>
+                    <button class="btn-scan" onclick="startScanner()">📷</button>
+                    <button class="btn-ai" onclick="identifyDrug()">✨ 填单</button>
                 </div>
             </div>
-
             <div class="full-width">
-                <label>功能标签 (AI 自动勾选，也可手动点选)</label>
-                <div class="tags-container" id="tagSelectionArea">
-                    <!-- JS 生成标签 -->
-                </div>
+                <label>功能标签</label>
+                <div class="tags-container" id="tagSelectionArea"></div>
             </div>
-
-            <div><label>有效期至</label><input type="date" id="expiry"></div>
-            <div><label>库存数量</label><input type="text" id="quantity" placeholder="如: 2盒"></div>
-            
-            <div><label>适用人群</label><select id="target"><option>通用</option><option>成人</option><option>儿童</option><option>老人</option></select></div>
-            <div><label>适用性别</label><select id="gender"><option>通用</option><option>男性</option><option>女性</option></select></div>
-            
-            <div class="full-width"><label>主治功能 (详细)</label><input type="text" id="usage"></div>
-            <div class="full-width"><label>用法用量</label><input type="text" id="dosage"></div>
-            <div class="full-width"><label>注意事项</label><input type="text" id="notes" style="border-color:#fecaca"></div>
+            <div><label>有效期</label><input type="date" id="expiry"></div>
+            <div><label>库存</label><input type="text" id="quantity"></div>
+            <div><label>人群</label><select id="target"><option>通用</option><option>成人</option><option>儿童</option><option>老人</option></select></div>
+            <div><label>性别</label><select id="gender"><option>通用</option><option>男性</option><option>女性</option></select></div>
+            <div class="full-width"><label>主治</label><input type="text" id="usage"></div>
+            <div class="full-width"><label>用法</label><input type="text" id="dosage"></div>
+            <div class="full-width"><label>注意</label><input type="text" id="notes" style="border-color:#fecaca"></div>
         </div>
-
-        <div class="action-bar">
+        <div style="display:flex;gap:10px;margin-top:20px">
             <button class="btn btn-cancel" onclick="closeForm()">取消</button>
-            <button class="btn btn-primary" onclick="saveDrug()" id="saveBtn">📥 保存</button>
+            <button class="btn btn-primary" onclick="saveDrug()" id="saveBtn">保存</button>
         </div>
     </div>
 
-    <!-- 3. 列表区 -->
+    <!-- 4. 列表区 -->
     <div id="drugList"></div>
 </div>
 
 <script>
     // ================== 配置区 ==================
-    const USER_PASSWORD = "285925";  // 你的密码
+     const USER_PASSWORD = "285925";  // 设置你的家庭密码
     const LC_APP_ID = 'WebkPZV6qkXf2ILVmohQlIj7-gzGzoHsz';
     const LC_APP_KEY = 'pD4b4TdG7tEFioQBXOMbWWi6';
     const AI_API_KEY = 'sk-69074729a1fa403789c054d21d450d6f';
 
-    // 🏷️ 定义你想要的分类标签
     const TAG_LIST = ["消炎", "感冒发烧", "咳嗽咽痛", "止痛", "消化", "皮肤", "高血压", "关节痛", "外用", "抗过敏", "维生素", "儿童专用"];
     // ===========================================
 
     let allDrugsCache = [];
-    let currentEditingId = null; // 当前正在编辑的ID，空则为新增
+    let currentEditingId = null;
     let html5QrCode;
 
     // --- 初始化 ---
@@ -190,21 +211,17 @@
         initTagsUI();
     }
 
-    // 生成标签UI（输入框里的和顶部的）
     function initTagsUI() {
-        // 1. 生成顶部筛选栏
         const filterBar = document.getElementById('filterBar');
+        const tagArea = document.getElementById('tagSelectionArea');
         TAG_LIST.forEach(tag => {
+            // 筛选栏
             const btn = document.createElement('button');
             btn.className = 'cat-btn';
             btn.innerText = tag;
             btn.onclick = function() { filterBy(tag, this) };
             filterBar.appendChild(btn);
-        });
-
-        // 2. 生成表单里的选择框
-        const tagArea = document.getElementById('tagSelectionArea');
-        TAG_LIST.forEach(tag => {
+            // 表单选择
             const span = document.createElement('span');
             span.className = 'check-tag';
             span.innerText = tag;
@@ -213,55 +230,83 @@
         });
     }
 
-    // --- 登录逻辑 ---
     function checkLogin() {
         if(document.getElementById('passwordInput').value === USER_PASSWORD) {
             document.getElementById('login-modal').style.display = 'none';
             document.getElementById('mainApp').style.display = 'block';
             init();
             fetchDrugs();
-        } else {
-            alert("密码错误");
+        } else { alert("密码错误"); }
+    }
+
+    // --- 📖 药品百科查询逻辑 (核心新功能) ---
+    function openWiki() {
+        document.getElementById('wiki-modal').style.display = 'flex';
+        document.getElementById('wikiInput').focus();
+    }
+
+    async function searchWiki() {
+        const name = document.getElementById('wikiInput').value.trim();
+        if(!name) return alert("请输入药名");
+        
+        const resultDiv = document.getElementById('wikiResult');
+        resultDiv.innerHTML = '<div style="text-align:center;margin-top:20px">🤖 AI 药剂师正在查阅资料...</div>';
+        
+        try {
+            const prompt = `请扮演专业药剂师，为用户详细介绍药品【${name}】。请按以下格式输出：
+            【药品名称】${name}
+            【功能主治】(通俗易懂的解释)
+            【用法用量】(常规建议)
+            【副作用/不良反应】
+            【禁忌人群】(谁绝对不能吃)
+            【注意事项】
+            
+            不要使用Markdown格式，直接用纯文本分段显示。`;
+
+            const res = await fetch("https://api.deepseek.com/chat/completions", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${AI_API_KEY}` },
+                body: JSON.stringify({
+                    model: "deepseek-chat",
+                    messages: [{role: "user", content: prompt}],
+                    temperature: 0.3
+                })
+            });
+            const data = await res.json();
+            const text = data.choices[0].message.content;
+            
+            // 简单的格式化，把换行变成HTML换行
+            resultDiv.innerHTML = text.replace(/\n/g, '<br>');
+            
+        } catch(e) {
+            resultDiv.innerHTML = `<div style="color:red">查询失败：${e.message}</div>`;
         }
     }
 
-    // --- 数据操作 ---
+    // --- 库存管理 ---
     async function fetchDrugs() {
-        showLoading(true, "同步数据中...");
+        showLoading(true, "同步数据...");
         const query = new AV.Query('Medicine');
         query.descending('createdAt');
         query.limit(1000);
         try {
             allDrugsCache = await query.find();
             renderList(allDrugsCache);
-        } catch(e) { console.error(e); alert("获取失败"); }
+        } catch(e) { console.error(e); }
         showLoading(false);
     }
 
-    // 保存（新增 或 修改）
     async function saveDrug() {
         const name = document.getElementById('name').value;
         const expiry = document.getElementById('expiry').value;
-        if(!name || !expiry) return alert("请至少填写名称和有效期");
+        if(!name || !expiry) return alert("写名称和有效期");
+        showLoading(true);
 
-        showLoading(true, "正在保存...");
-        
-        // 收集选中的标签
         const selectedTags = [];
         document.querySelectorAll('.check-tag.checked').forEach(el => selectedTags.push(el.innerText));
 
         try {
-            let drug;
-            if (currentEditingId) {
-                // 编辑模式：获取已有对象
-                drug = AV.Object.createWithoutData('Medicine', currentEditingId);
-            } else {
-                // 新增模式
-                const Medicine = AV.Object.extend('Medicine');
-                drug = new Medicine();
-            }
-
-            // 写入字段
+            let drug = currentEditingId ? AV.Object.createWithoutData('Medicine', currentEditingId) : new (AV.Object.extend('Medicine'))();
             drug.set('name', name);
             drug.set('expiry', expiry);
             drug.set('quantity', document.getElementById('quantity').value);
@@ -270,156 +315,116 @@
             drug.set('usage', document.getElementById('usage').value);
             drug.set('dosage', document.getElementById('dosage').value);
             drug.set('notes', document.getElementById('notes').value);
-            drug.set('tags', selectedTags); // 保存标签数组
-
+            drug.set('tags', selectedTags);
             await drug.save();
             closeForm();
-            fetchDrugs(); // 刷新列表
-        } catch(e) {
-            alert("保存失败: " + e.message);
-        }
+            fetchDrugs();
+        } catch(e) { alert("保存失败"); }
         showLoading(false);
     }
 
-    // 打开编辑
     function editDrug(id) {
         const drug = allDrugsCache.find(d => d.id === id);
         if(!drug) return;
-
         currentEditingId = id;
-        openForm(true); // true 表示是编辑模式
-
-        // 填入数据
+        openForm(true);
         document.getElementById('name').value = drug.get('name');
         document.getElementById('expiry').value = drug.get('expiry');
-        document.getElementById('quantity').value = drug.get('quantity') || '';
+        document.getElementById('quantity').value = drug.get('quantity')||'';
         document.getElementById('target').value = drug.get('target');
         document.getElementById('gender').value = drug.get('gender');
-        document.getElementById('usage').value = drug.get('usage') || '';
-        document.getElementById('dosage').value = drug.get('dosage') || '';
-        document.getElementById('notes').value = drug.get('notes') || '';
-
-        // 恢复标签状态
-        const savedTags = drug.get('tags') || [];
+        document.getElementById('usage').value = drug.get('usage')||'';
+        document.getElementById('dosage').value = drug.get('dosage')||'';
+        document.getElementById('notes').value = drug.get('notes')||'';
+        
+        const tags = drug.get('tags')||[];
         document.querySelectorAll('.check-tag').forEach(el => {
-            if (savedTags.includes(el.innerText)) {
-                el.classList.add('checked');
-            } else {
-                el.classList.remove('checked');
-            }
+            el.classList.toggle('checked', tags.includes(el.innerText));
         });
     }
 
     async function deleteDrug(id) {
-        if(!confirm("确定删除吗？")) return;
+        if(!confirm("确定删除？")) return;
         const drug = AV.Object.createWithoutData('Medicine', id);
         await drug.destroy();
         fetchDrugs();
     }
 
-    // --- 表单控制 ---
-    function openForm(isEdit = false) {
+    // --- 界面控制 ---
+    function openForm(isEdit=false) {
         document.getElementById('inputCard').classList.add('show');
-        document.getElementById('formTitle').innerText = isEdit ? "✏️ 编辑药品信息" : "💊 添加新药品";
+        document.getElementById('formTitle').innerText = isEdit ? "✏️ 编辑药品" : "💊 添加新药";
         document.getElementById('saveBtn').innerText = isEdit ? "保存修改" : "放入药箱";
-        if (!isEdit) {
-            // 如果是新增，清空表单
-            clearForm();
+        if(!isEdit) {
+            document.querySelectorAll('#inputCard input').forEach(i=>i.value='');
+            document.querySelectorAll('.check-tag').forEach(t=>t.classList.remove('checked'));
             currentEditingId = null;
         }
-        // 滚动到表单位置
-        document.getElementById('inputCard').scrollIntoView({behavior: "smooth"});
+        document.getElementById('inputCard').scrollIntoView({behavior:"smooth"});
     }
-
     function closeForm() {
         document.getElementById('inputCard').classList.remove('show');
-        clearForm();
         currentEditingId = null;
     }
 
-    function clearForm() {
-        document.querySelectorAll('input').forEach(i => i.value = '');
-        document.querySelectorAll('.check-tag').forEach(t => t.classList.remove('checked'));
-    }
-
-    // --- AI 识别 (升级版：自动选标签) ---
+    // --- AI 自动填单 (入库用) ---
     async function identifyDrug() {
         const val = document.getElementById('name').value.trim();
-        if(!val) return alert("请输入名称");
-        showLoading(true, "AI 正在分析分类...");
-
+        if(!val) return alert("输入名称");
+        showLoading(true, "AI 分析中...");
         try {
-            const prompt = `药品:${val}。请返回JSON包含: name, target(成人/儿童/通用), gender, usage(主治), dosage(用法), notes(注意), tags(数组，必须从以下列表中选择1-3个: ${TAG_LIST.join(',')})。`;
-            
             const res = await fetch("https://api.deepseek.com/chat/completions", {
                 method: "POST",
                 headers: { "Content-Type": "application/json", "Authorization": `Bearer ${AI_API_KEY}` },
                 body: JSON.stringify({
                     model: "deepseek-chat",
-                    messages: [{role: "system", content: "你是一个药剂师。只返回纯JSON。"}, {role: "user", content: prompt}],
+                    messages: [{role: "system", content: "返回JSON: name,target,gender,usage,dosage,notes,tags(从给定列表选)"}, 
+                              {role: "user", content: `药品:${val}。标签列表:${TAG_LIST.join(',')}`}
+                    ],
                     temperature: 0.1
                 })
             });
-            
             const data = await res.json();
-            const content = data.choices[0].message.content.replace(/```json/g,'').replace(/```/g,'').trim();
-            const result = JSON.parse(content);
-
+            const result = JSON.parse(data.choices[0].message.content.replace(/```json/g,'').replace(/```/g,''));
+            
             if(result.name) document.getElementById('name').value = result.name;
-            ['target','gender','usage','dosage','notes'].forEach(k => {
-                if(result[k]) document.getElementById(k).value = result[k];
-            });
-
-            // 自动勾选标签
-            if(result.tags && Array.isArray(result.tags)) {
+            ['target','gender','usage','dosage','notes'].forEach(k => { if(result[k]) document.getElementById(k).value = result[k]; });
+            if(result.tags) {
                 document.querySelectorAll('.check-tag').forEach(el => {
-                    el.classList.remove('checked'); // 先清空
-                    if(result.tags.includes(el.innerText)) el.classList.add('checked');
+                    el.classList.toggle('checked', result.tags.includes(el.innerText));
                 });
             }
-
-        } catch(e) { alert("识别失败: " + e.message); }
+        } catch(e) { alert("识别失败"); }
         showLoading(false);
     }
 
-    // --- 列表渲染与筛选 ---
+    // --- 列表渲染 ---
     function renderList(drugs) {
         const listDiv = document.getElementById('drugList');
         listDiv.innerHTML = '';
-        
-        if(drugs.length === 0) {
-            listDiv.innerHTML = '<div style="text-align:center;color:#9ca3af;margin-top:20px">没有药品</div>';
-            return;
-        }
+        if(drugs.length === 0) return listDiv.innerHTML = '<div style="text-align:center;color:#999;margin-top:20px">暂无药品</div>';
 
-        const sorted = [...drugs].sort((a,b) => new Date(a.get('expiry')) - new Date(b.get('expiry')));
-
-        sorted.forEach(d => {
+        [...drugs].sort((a,b) => new Date(a.get('expiry')) - new Date(b.get('expiry'))).forEach(d => {
             const status = getStatus(d.get('expiry'));
             const tags = d.get('tags') || [];
-            
             const div = document.createElement('div');
             div.className = `drug-card ${status.code}`;
             div.innerHTML = `
                 <div class="card-actions">
-                    <button class="icon-btn edit" onclick="editDrug('${d.id}')">✎</button>
-                    <button class="icon-btn del" onclick="deleteDrug('${d.id}')">🗑</button>
+                    <button class="icon-btn" onclick="editDrug('${d.id}')">✎</button>
+                    <button class="icon-btn" onclick="deleteDrug('${d.id}')">🗑</button>
                 </div>
                 <h3 class="drug-name">${d.get('name')}</h3>
                 <div class="info-row">
-                    <span style="color:${status.color};font-weight:bold">${status.text}</span>
-                    <span>|</span>
-                    <span>库存: ${d.get('quantity') || '-'}</span>
-                    <span>|</span>
+                    <span style="color:${status.color};font-weight:bold">${status.text}</span> | 
+                    <span>库存: ${d.get('quantity')||'-'}</span> | 
                     <span>${d.get('target')}</span>
                 </div>
-                <div class="tag-row">
-                    ${tags.map(t => `<span class="mini-tag">${t}</span>`).join('')}
-                </div>
-                <div style="font-size:0.9em;color:#4b5563;margin-top:8px">
+                <div style="margin-bottom:8px">${tags.map(t=>`<span class="mini-tag">${t}</span>`).join('')}</div>
+                <div style="font-size:0.9em;color:#4b5563">
                     <div><strong>主治:</strong> ${d.get('usage')||'-'}</div>
                     <div><strong>用法:</strong> ${d.get('dosage')||'-'}</div>
-                    ${d.get('notes') ? `<div style="color:#ef4444;margin-top:4px">⚠️ ${d.get('notes')}</div>` : ''}
+                    ${d.get('notes') ? `<div style="color:#e11d48;margin-top:4px">⚠️ ${d.get('notes')}</div>` : ''}
                 </div>
             `;
             listDiv.appendChild(div);
@@ -427,58 +432,42 @@
     }
 
     function filterBy(type, btn) {
-        // 样式切换
         document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         document.getElementById('searchInput').value = '';
-
+        
         let filtered = [];
         const today = new Date(); today.setHours(0,0,0,0);
 
-        if (type === 'all') filtered = allDrugsCache;
-        else if (type === 'expired') filtered = allDrugsCache.filter(d => (new Date(d.get('expiry')) - today) < 0);
-        else if (type === 'expiring') {
-            filtered = allDrugsCache.filter(d => {
-                const diff = (new Date(d.get('expiry')) - today) / 86400000;
-                return diff >= 0 && diff <= 90;
-            });
-        } 
-        else {
-            // 标签匹配逻辑：检查 drug.tags 数组里是否包含当前点击的 tag
-            filtered = allDrugsCache.filter(d => {
-                const tags = d.get('tags') || [];
-                return tags.includes(type);
-            });
-        }
+        if(type==='all') filtered = allDrugsCache;
+        else if(type==='expired') filtered = allDrugsCache.filter(d => (new Date(d.get('expiry'))-today) < 0);
+        else if(type==='expiring') filtered = allDrugsCache.filter(d => {
+            const diff = (new Date(d.get('expiry'))-today)/86400000;
+            return diff >= 0 && diff <= 90;
+        });
+        else filtered = allDrugsCache.filter(d => (d.get('tags')||[]).includes(type));
         renderList(filtered);
     }
 
     function handleSearch() {
         const val = document.getElementById('searchInput').value.toLowerCase();
         document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
-        
-        const filtered = allDrugsCache.filter(d => {
-            const txt = (d.get('name') + d.get('usage') + (d.get('notes')||'')).toLowerCase();
-            return txt.includes(val);
-        });
-        renderList(filtered);
+        renderList(allDrugsCache.filter(d => (d.get('name')+d.get('usage')+(d.get('notes')||'')).toLowerCase().includes(val)));
     }
 
-    // 工具
     function getStatus(d) {
-        const diff = Math.ceil((new Date(d) - new Date()) / 86400000);
-        if (diff < 0) return {code:'expired', text:`已过期 ${Math.abs(diff)} 天`, color:'#dc2626'};
-        if (diff <= 90) return {code:'warning', text:`剩 ${diff} 天`, color:'#d97706'};
+        const diff = Math.ceil((new Date(d) - new Date())/86400000);
+        if(diff < 0) return {code:'expired', text:`过期 ${Math.abs(diff)}天`, color:'#d73a49'};
+        if(diff <= 90) return {code:'warning', text:`剩 ${diff}天`, color:'#d97706'};
         return {code:'normal', text:`有效期至 ${d}`, color:'#059669'};
     }
-    
-    // 扫码相关
+
     function startScanner() {
         document.getElementById('scanner-modal').style.display = 'flex';
         html5QrCode = new Html5Qrcode("reader");
         html5QrCode.start({facingMode:"environment"}, {fps:10, qrbox:{width:250,height:250}}, 
-        (txt) => { stopScanner(); document.getElementById('name').value = txt; identifyDrug(); })
-        .catch(err => { alert("无法启动摄像头"); stopScanner(); });
+        (t) => { stopScanner(); document.getElementById('name').value = t; identifyDrug(); })
+        .catch(() => { alert("无法启动摄像头"); stopScanner(); });
     }
     function stopScanner() {
         document.getElementById('scanner-modal').style.display = 'none';
